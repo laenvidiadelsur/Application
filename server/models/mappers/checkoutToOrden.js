@@ -1,33 +1,44 @@
 export const checkoutDtoToOrden = (checkoutDto) => {
-  return {
-    // No agrego _id aquí porque lo genera Mongoose
-    usuario: checkoutDto.receiverId, // ObjectId como string
-    items: (checkoutDto.orderItems || []).map(item => ({
-      foundationId: item.foundationId,
-      productCategory: item.productCategory,
-      producto: item.productId,  // ObjectId string
-      productImage: item.productImage,
+  const items = (checkoutDto.orderItems || []).map(item => {
+    const precioUnitario = Number(item.productPrice);
+    const cantidad = item.productQuantity;
+
+    return {
+      producto: item.productId,
+      proveedor: item.proveedorId,
       nombre: item.productName,
-      precioUnitario: Number(item.productPrice),
-      cantidad: item.productQuantity,
-      subtotal: Number(item.productPrice) * item.productQuantity
-    })),
+      precioUnitario,
+      cantidad,
+      subtotal: precioUnitario * cantidad
+    };
+  });
+
+  const subtotal = items.reduce((acc, item) => acc + item.subtotal, 0);
+
+  return {
+    usuario: checkoutDto.receiverId,
+    items,
+    subtotal,
     envio: checkoutDto.shippingCost || 0,
-    notas: checkoutDto.coupon || '',
-    metodoPago: 'stripe',
-    total: checkoutDto.totalPrice || 0,
+    total: checkoutDto.totalPrice || subtotal + (checkoutDto.shippingCost || 0),
+    metodoPago: checkoutDto.paymentMethod || 'stripe',
     estadoEnvio: mapShippingStatusToEstadoEnvio(checkoutDto.shippingStatus),
+    notas: checkoutDto.coupon || '',
     direccionEnvio: {
-      pais: checkoutDto.receiverAddress || 'MX'
-      // Podrías agregar calle, ciudad, etc si los recibes
+      pais: checkoutDto.receiverAddress || 'MX',
+      coordenadas: {
+        type: 'Point',
+        coordinates: checkoutDto.coordinates || [0, 0]
+      }
     },
     datosContacto: {
       nombre: checkoutDto.receiverName || '',
-      telefono: '',  // Si tienes disponible, agregar
-      email: ''     // Si tienes disponible, agregar
+      telefono: checkoutDto.receiverPhone || '',
+      email: checkoutDto.receiverEmail || ''
     }
   };
 };
+
 
 function mapShippingStatusToEstadoEnvio(status) {
   switch (status) {

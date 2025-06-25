@@ -69,7 +69,8 @@ export const obtenerNombreFundacion = async (req, res) => {
       return res.status(404).json({ message: 'Fundación no encontrada' });
     }
 
-    res.send(fundacion.nombre); // Devuelve solo el nombre como string
+    // Devuelve como objeto JSON
+    res.json({ nombre: fundacion.nombre });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error del servidor' });
